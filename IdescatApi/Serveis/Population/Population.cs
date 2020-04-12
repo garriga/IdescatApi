@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using QuickType;
 
 namespace IdescatApi.Serveis
 {
@@ -15,18 +16,27 @@ namespace IdescatApi.Serveis
             _httpClient = httpClient;
         }
 
-        public void Cerca(string Text)
+        public async Task<ParsedJsonPopulation> CercaAsync(string Text)
         {
-            Cerca(Text, new List<TerritorialEntity>(), new List<Similarity>(), Selector.All, Orderby.Type, 0); 
+            var all = new List<TerritorialEntity>() {
+                TerritorialEntity.Catalunya,
+                TerritorialEntity.Province,
+                TerritorialEntity.ATP,
+                TerritorialEntity.County,
+                TerritorialEntity.Municipality,
+                TerritorialEntity.ColectiveEntities,
+                TerritorialEntity.SingularEntities,
+                TerritorialEntity.PopulationNucleus,
+                TerritorialEntity.Scattered
+            };
+            return await CercaAsync(Text, all, new List<Similarity>(), Selector.All, Orderby.Type, 0); 
+            //return await CercaAsync(Text, new List<TerritorialEntity>(), new List<Similarity>(), Selector.All, Orderby.Type, 0); 
         }
-
-        public void Cerca(string Text, TerritorialEntity territorialEntity)
+        public async Task<ParsedJsonPopulation> CercaAsync(string Text, TerritorialEntity territorialEntity)
         {
-            Cerca(Text, new List<TerritorialEntity>() { territorialEntity }, new List<Similarity>(), Selector.All, Orderby.Type, 0);
-
+            return await CercaAsync(Text, new List<TerritorialEntity>() { territorialEntity }, new List<Similarity>(), Selector.All, Orderby.Type, 0);
         }
-
-        public void Cerca(string Text, List<TerritorialEntity> TerritorialEntities, List<Similarity> Similarities, 
+        public async Task<ParsedJsonPopulation> CercaAsync(string Text, List<TerritorialEntity> TerritorialEntities, List<Similarity> Similarities, 
             Selector selector, Orderby orderby, int position)
         {
             var param = new Parameters();
@@ -37,12 +47,24 @@ namespace IdescatApi.Serveis
             param.Add("orderby", orderby);
             param.Add("posicio", position.ToString());
             var request = new HttpRequestMessage(HttpMethod.Get, Identifier + "cerca.json" + "?" + param.ToString());
-            // TODO: fix the async things
-            var response = _httpClient.SendAsync(request).GetAwaiter().GetResult();
+            var response = await _httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
-                var content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                //return content.Split('\n');
+                var content = await response.Content.ReadAsStringAsync();
+                //buscar entry i posar un [] si fa falta
+                int startPos = content.IndexOf("entry");
+                startPos += 7;
+                // the json is not well made and changes depending if there is only one entry or several
+                // so, we fix it by changing to json to the same format in case there is only one entry
+                if (content[startPos] != '[')
+                {
+                    // we add [ and ] at the beginning and at the end of the entry section
+                    content = content.Insert(startPos, "[");
+                    // search end position
+                    int endPos = content.IndexOf("\"xmlns\"") - 1;
+                    content = content.Insert(endPos, "]");
+                }
+                return ParsedJsonPopulation.FromJson(content);
             }
             else
             {
@@ -50,15 +72,15 @@ namespace IdescatApi.Serveis
             }
         }
 
-        public string[] Sug(string Start)
+        public async Task<string[]> SugAsync(string Start)
         {
-            return Sug(Start, new List<TerritorialEntity>());
+            return await SugAsync(Start, new List<TerritorialEntity>());
         }
-        public string[] Sug(string Start, TerritorialEntity territorialEntity)
+        public async Task<string[]> SugAsync(string Start, TerritorialEntity territorialEntity)
         {
-            return Sug(Start, new List<TerritorialEntity>() { territorialEntity });
+            return await SugAsync(Start, new List<TerritorialEntity>() { territorialEntity });
         }
-        public string[] Sug(string Start, List<TerritorialEntity> TerritorialEntities)
+        public async Task<string[]> SugAsync(string Start, List<TerritorialEntity> TerritorialEntities)
         {
             if (Start.Length < 2)
             {
@@ -68,11 +90,10 @@ namespace IdescatApi.Serveis
             param.Add("q", Start);
             param.Add("tipus", TerritorialEntities);
             var request = new HttpRequestMessage(HttpMethod.Get, Identifier + "sug.txt" + "?" + param.ToString());
-            // TODO: fix the async things
-            var response = _httpClient.SendAsync(request).GetAwaiter().GetResult();
+            var response = await _httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode) 
             { 
-                var content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                var content = await response.Content.ReadAsStringAsync();
                 return content.Split('\n');
             } 
             else
@@ -81,10 +102,10 @@ namespace IdescatApi.Serveis
             }
         }
 
-        public Task<HttpResponseMessage> ManualAsync(string param)
+        public async Task<HttpResponseMessage> ManualAsync(string param)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, Identifier + param);
-            return _httpClient.SendAsync(request);
+            return await _httpClient.SendAsync(request);
         }
     }
 }

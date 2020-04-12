@@ -1,11 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using IdescatApi.Serveis;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace IdescatApi.Serveis.Tests
 {
@@ -13,18 +10,19 @@ namespace IdescatApi.Serveis.Tests
     public class PopulationTests
     {
         [TestMethod()]
-        public void SugTest()
+        public void SugAsyncTest()
         {
             var client = new IdescatApiClient();
 
-            Assert.ThrowsException<ArgumentException>(() => client.Population.Sug(""), 
+            Assert.ThrowsException<ArgumentException>(() => client.Population.SugAsync("").GetAwaiter().GetResult(), 
                 "The string of the q filter must have at least 2 characters.");
 
-            string[] entities = client.Population.Sug("sa");
+            string[] entities = client.Population.SugAsync("sa").GetAwaiter().GetResult();
 
-            string[] entities2 = client.Population.Sug("va", TerritorialEntity.County);
+            string[] entities2 = client.Population.SugAsync("va", TerritorialEntity.County).GetAwaiter().GetResult();
 
-            string[] entities3 = client.Population.Sug("sa", new List<TerritorialEntity>() { TerritorialEntity.Municipality });
+            string[] entities3 = client.Population.SugAsync("sa", 
+                new List<TerritorialEntity>() { TerritorialEntity.Municipality }).GetAwaiter().GetResult();
 
             HttpResponseMessage manualResponse = client.Population.ManualAsync("sug.txt?q=sa&tipus=mun").GetAwaiter().GetResult();
             string[] entitiesManual = manualResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult().Split('\n');
@@ -35,17 +33,26 @@ namespace IdescatApi.Serveis.Tests
             }
 
             // assert data
-            string[] entities4 = client.Population.Sug("sabadell", TerritorialEntity.Municipality);
+            string[] entities4 = client.Population.SugAsync("sabadell", TerritorialEntity.Municipality)
+                .GetAwaiter().GetResult();
             Assert.AreEqual(1, entities4.Length);
             Assert.AreEqual("Sabadell", entities4[0]);
         }
 
         [TestMethod()]
-        public void CercaTest()
+        public async Task CercaAsyncTest()
         {
             var client = new IdescatApiClient();
 
-            client.Population.Cerca("sabadell");
+            var parsed = await client.Population.CercaAsync("sabadell");
+            var entities = parsed.GetEntities();
+            Assert.AreEqual(4, entities.Count);
+
+            var parsed2 = await client.Population.CercaAsync("sabadell", TerritorialEntity.Municipality);
+            var entities2 = parsed2.GetEntities();
+            Assert.AreEqual(1, entities2.Count);            
+            Entity sabadell = entities[0];
+            Assert.AreEqual("Sabadell", sabadell.Name);
         }
     }
 }

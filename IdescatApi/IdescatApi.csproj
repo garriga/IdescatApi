@@ -35,7 +35,6 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
@@ -46,13 +45,19 @@
     <Compile Include="Serveis\EnumExtension.cs" />
     <Compile Include="Serveis\IService.cs" />
     <Compile Include="Serveis\Parameters.cs" />
+    <Compile Include="Serveis\Population\Entity.cs" />
+    <Compile Include="Serveis\Population\JsonClasses.cs" />
     <Compile Include="Serveis\Population\Orderby.cs" />
+    <Compile Include="Serveis\Population\ParsedJsonResult.cs" />
     <Compile Include="Serveis\Population\Population.cs" />
     <Compile Include="Serveis\Population\Selector.cs" />
     <Compile Include="Serveis\Population\Similarity.cs" />
     <Compile Include="Serveis\Population\TerritorialEntity.cs" />
-    <Compile Include="Serveis\RequestMaker.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>12.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

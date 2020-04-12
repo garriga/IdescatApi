@@ -31,5 +31,4 @@ namespace IdescatApi.Serveis
         [Description("dis")]
         Scattered
     }
-   
 }
